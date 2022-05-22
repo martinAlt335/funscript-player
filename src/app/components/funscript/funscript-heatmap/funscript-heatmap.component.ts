@@ -50,13 +50,8 @@ export class FunscriptHeatmapComponent implements AfterViewInit {
     options?: HeatmapOptions
   ): Promise<void> {
     await new Promise((resolve, reject) => {
-      if (options) {
-        renderHeatmap(this.heatmap.nativeElement, funscript, options);
-        setTimeout(resolve, 1000);
-      } else {
-        renderHeatmap(this.heatmap.nativeElement, funscript);
-        setTimeout(resolve, 1000);
-      }
+      renderHeatmap(this.heatmap.nativeElement, funscript, options);
+      setTimeout(resolve, 1000);
     });
   }
 }

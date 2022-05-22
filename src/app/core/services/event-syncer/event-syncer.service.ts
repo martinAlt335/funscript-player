@@ -23,42 +23,34 @@ export class EventSyncerService {
     private userInputService: UserInputService
   ) {
     this.getFSChange();
-    this.stopWatch.display$.subscribe(async (emission) => {
+    this.stopWatch.display$.subscribe((emission) => {
       this.currMediaTime = this.currMediaTime + this.interval;
       if (!environment.production) {
         console.log(emission, this.currMediaTime);
       }
-      await this.eventManager();
+      this.eventManager();
     });
   }
 
-  async eventManager(): Promise<void> {
-    const range = {
-      min: this.currMediaTime - 50,
-      max: this.currMediaTime + 50,
-    };
+  eventManager(): void {
     // get index of action in the bounds of range
     const index = this.funscript.actions.findIndex(
-      (item: { at: number; pos: number }) =>
-        item.at >= range.min && item.at <= range.max
+      (item: { at: number; pos: number }) => item.at === this.currMediaTime
     );
+    console.log('hit ', index);
     if (
       // if match && not an action that's already run
-      index !== -1 &&
-      this.funscript.actions[index].at !== this.savedAction.at
+      index !== -1
     ) {
-      if (this.funscript.actions[index + 1] !== undefined) {
-        // if did not reach end of actions
-        this.savedAction = this.funscript.actions[index];
+      this.savedAction = this.funscript.actions[index];
 
-        const set = {
-          current: this.funscript.actions[index],
-          next: this.funscript.actions[index + 1],
-        };
+      const set = {
+        current: this.funscript.actions[index],
+        next: this.funscript.actions[index + 1],
+      };
 
-        const duration = set.next.at - set.current.at;
-        await this.buttPlugService.sendEvent(set, range, duration);
-      }
+      const duration = set.next.at - set.current.at;
+      this.buttPlugService.sendEvent(set, duration).then();
     }
   }
 

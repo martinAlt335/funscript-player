@@ -22,10 +22,7 @@ export class ButtplugService {
   isScanning = false;
   isConnecting = false;
   scanTime = 30000; // 30 second scanning limit
-  // activeEvent: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-  isLocked = false;
-  savedAction: { at: number; pos: number } = { at: 0, pos: 0 };
   debugNumber = 0;
 
   constructor(
@@ -106,15 +103,12 @@ export class ButtplugService {
 
   async sendEvent(
     set: { current: Action; next: Action },
-    range: { min: number; max: number },
     duration: number
   ): Promise<void> {
     if (!environment.production) {
-      console.log(range);
-      this.debugNumber++;
       console.log(
         'Action',
-        this.debugNumber,
+        this.debugNumber++,
         ': Sent position of',
         set.current.pos * 0.01,
         'with duration of',
@@ -122,44 +116,38 @@ export class ButtplugService {
       );
     }
 
-    if (!this.isLocked) {
-      await this.sendCommand(set.current.pos, duration).then((command) => {
-        if (!environment.production && command) {
-          console.log('Action', this.debugNumber, `of type ${command} done.`);
-        }
-      });
-    }
+    this.sendCommand(set.current.pos, duration);
+    console.log(
+      'Action',
+      this.debugNumber,
+      `of type ${this.configR.store.getValue().command} done.`
+    );
   }
 
-  private async sendCommand(
-    pos: number,
-    duration: number
-  ): Promise<string | void> {
+  private sendCommand(pos: number, duration: number): string | void {
     if (this.device === false) {
       return void 0;
     }
-
-    this.isLocked = true;
 
     const command = this.configR.store.getValue().command;
 
     switch (command) {
       case 'linear':
-        await this.device
+        this.device
           .linear(pos * 0.01, duration)
-          .catch((e) => this.sendCommandErrHandler(e));
+          .catch((e) => this.sendCommandErrHandler(e))
+          .then();
         break;
       case 'vibrate':
-        await this.device
+        this.device
           .vibrate(1 - pos * 0.01)
-          .catch((e) => this.sendCommandErrHandler(e));
+          .catch((e) => this.sendCommandErrHandler(e))
+          .then();
         break;
       case 'linear+rotate':
         this.notifications.showToast('Not implemented yet.', 'warning');
         break;
     }
-
-    this.isLocked = false;
 
     return command;
   }
